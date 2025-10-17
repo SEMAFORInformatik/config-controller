@@ -1,0 +1,21 @@
+# Default values for config-controller
+
+image:
+  repository: hub.semafor.ch/semafor/config-controller
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+affinity: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+imageCredentials:
+  registry: hub.semafor.ch
+  username: ""
+  password: ""
+
+otel:
+  enabled: false
+  endpoint: "http://tempo.grafana:4318/v1/traces"

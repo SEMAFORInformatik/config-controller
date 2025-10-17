@@ -1,0 +1,21 @@
+build_image:
+  stage: build
+  only:
+    - tags
+  image:
+    name: docker:stable
+  services:
+    - name: docker:dind
+      entrypoint: ["env", "-u", "DOCKER_HOST"]
+      command: ["dockerd-entrypoint.sh"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+    # See https://github.com/docker-library/docker/pull/166
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - apk add git bash
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+    - $CI_PROJECT_DIR/create-image.sh $CI_COMMIT_TAG
+    - docker push hub.semafor.ch/semafor/config-controller:latest
+    - docker push hub.semafor.ch/semafor/config-controller:$CI_COMMIT_TAG

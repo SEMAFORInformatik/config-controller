@@ -1,0 +1,11 @@
+__pychache__/
+.git
+instance
+tests
+helm
+venv
+Dockerfile
+create-image.sh
+test_requirements.txt
+skaffold.yaml
+k8s

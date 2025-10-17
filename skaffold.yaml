@@ -1,0 +1,15 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: config-controller
+build:
+  artifacts:
+  - image: hub.semafor.ch/semafor/config-controller
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+      - name: config-controller
+        chartPath: helm
+        version: 1.1.0
