@@ -1,0 +1,49 @@
+# Default values for config-controller
+
+replicaCount: 1
+
+image:
+  repository: hub.semafor.ch/semafor/config-controller
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+nameOverride: ""
+fullnameOverride: ""
+
+intensApps:
+  {}
+
+imageCredentials:
+  registry: hub.semafor.ch
+  username: gitlab+deploy-token-27
+  password: 367sB3Sp2xJqij2kRpiW
+
+otel:
+  enabled: false
+  endpoint: "http://tempo.grafana:4318/v1/traces"

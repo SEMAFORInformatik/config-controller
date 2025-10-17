@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-controller-config
+  namespace: default
+data:
+  femag-intens.properties: |
+    statefulset=femag-intens
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+spec:
+  selector:
+    app: config-controller
+  ports:
+    # Default port used by the image
+    - name: http
+      port: 3333
+      targetPort: 3333
+
+  # Service type (one of ClusterIP, NodePort, LoadBalancer, default is ClusterIP)
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-controller
+  labels:
+    app: config-controller
+spec:
+  selector:
+    matchLabels:
+      app: config-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: config-controller
+    spec:
+      containers:
+        - name: config-controller
+          image: hub.semafor.ch/semafor/config-controller:latest
+          ports:
+            - containerPort: 3333
+              name: "http"
+          env:
+            - name: LABEL_KEY
+              value: "app"
+          resources:
+            requests:
+              memory: "50Mi"
+            limits:
+              memory: "100Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config-controller
+
+      imagePullSecrets:
+        - name: config-controller-registry
+
+      volumes:
+        - name: config
+          configMap:
+            name: config-controller-config

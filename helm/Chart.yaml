@@ -1,0 +1,13 @@
+apiVersion: v2
+name: config-controller
+version: "1.1.0"
+description: A manager for (stateful) intens applications
+type: application
+
+home: https://gitlab.semafor.ch/semafor/config-controller
+sources:
+  - https://gitlab.semafor.ch/semafor/config-controller
+
+
+
+appVersion: "1.4.0"

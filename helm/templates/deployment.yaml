@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "config-controller.fullname" . }}
+  labels:
+    {{- include "config-controller.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "config-controller.selectorLabels" . | nindent 6 }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        {{- include "config-controller.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "config-controller.fullname" .}}
+      {{- if .Values.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range $key, $value := .Values.affinity }}
+            - matchExpressions:
+              - key: {{ $key }}
+                operator: In
+                values:
+                - "{{ $value }}"
+            {{- end }}
+      {{- end }}
+      containers:
+        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          name: {{ .Chart.Name }}
+          ports:
+            - containerPort: 3333
+              name: "http"
+          env:
+            - name: LABEL_KEY
+              value: "app"
+            - name: SET_NAMESPACE
+              value: "{{ .Release.Namespace }}"
+            {{- if .Values.otel.enabled }}
+            - name: OTEL_SERVICE_NAME
+              value: config-service
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp_proto_http
+            - name: OTEL_METRICS_EXPORTER
+              value: none
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "{{ .Values.otel.endpoint }}"
+            {{- end }}
+
+          resources:
+            requests:
+              memory: "50Mi"
+            limits:
+              memory: "100Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config-controller
+
+      imagePullSecrets:
+        - name: config-controller-registry
+
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "config-controller.fullname" . }}

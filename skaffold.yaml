@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: config-controller
+build:
+  artifacts:
+  - image: hub.semafor.ch/semafor/config-controller
+    docker:
+      dockerfile: Dockerfile-alpine
+manifests:
+  rawYaml:
+  - k8s/config-controller.yaml

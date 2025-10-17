@@ -1,0 +1,10 @@
+__pychache__/
+instance
+tests
+venv
+Dockerfile-python
+Dockerfile-alpine
+create-image.sh
+test_requirements.txt
+skaffold.yaml
+k8s

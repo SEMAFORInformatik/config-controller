@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "config-controller.fullname" . }}
+  labels:
+    app: {{ include "config-controller.fullname" . }}
+    chart: {{ include "config-controller.chart" . }}
+    release: "{{ .Release.Name }}"
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  {{- if .Values.intensApps }}
+  {{- range $file, $content := .Values.intensApps}}
+  {{ $file}}.properties: |
+    statefulset={{ $content }}
+  {{- end }}
+  {{- else }}
+  {{ fail `Not intens apps defined.
+Please define at least one app under the value "intensApps" with the statefulSet.
+Example: --set intensApps.appname=setname` }}
+  {{- end }}
