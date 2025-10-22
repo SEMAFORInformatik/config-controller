@@ -4,7 +4,7 @@ metadata:
   name: config-controller
 build:
   artifacts:
-  - image: hub.semafor.ch/semafor/config-controller
+  - image: ghcr.io/semaforinformatik/config-controller
     docker:
       dockerfile: Dockerfile-alpine
 manifests:

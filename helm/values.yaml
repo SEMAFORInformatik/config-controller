@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  repository: hub.semafor.ch/semafor/config-controller
+  repository: ghcr.io/semaforinformatik/config-controller
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
