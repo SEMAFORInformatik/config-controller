@@ -34,7 +34,7 @@ data:
       terminationGracePeriodSeconds: 0
       restartPolicy: Never
       containers:
-        - image: "hub.semafor.ch/semafor/scim:latest"
+        - image: "semafor/scim:latest"
         ...
     
 ```
