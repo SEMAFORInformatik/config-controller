@@ -40,9 +40,9 @@ intensApps:
   {}
 
 imageCredentials:
-  registry: hub.semafor.ch
-  username: gitlab+deploy-token-27
-  password: 367sB3Sp2xJqij2kRpiW
+  registry: ghcr.io
+  username:
+  password:
 
 otel:
   enabled: false
