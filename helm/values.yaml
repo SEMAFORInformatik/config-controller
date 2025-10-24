@@ -12,9 +12,9 @@ nameOverride: ""
 fullnameOverride: ""
 
 imageCredentials:
-  registry: hub.semafor.ch
-  username: ""
-  password: ""
+  registry: ghcr.io
+  username:
+  password:
 
 otel:
   enabled: false
