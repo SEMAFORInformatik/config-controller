@@ -1,5 +1,7 @@
 FROM alpine:3.17.3
 
+LABEL org.label-schema.name=config-controller
+
 ARG REVISION
 
 RUN apk add python3 py-pip
