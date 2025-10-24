@@ -13,7 +13,7 @@ target "default" {
   }
   dockerfile = "Dockerfile"
   tags = ["ghcr.io/semaforinformatik/config-controller:${GITHUB_REF_NAME}", "ghcr.io/semaforinformatik/config-controller:latest-v1"]
-  cache-from = ["type=gha,scope=webtens"]
-  cache-to = ["type=gha,mode=max,scope=webtens"]
+  cache-from = ["type=gha,scope=config-controller"]
+  cache-to = ["type=gha,mode=max,scope=config-controller"]
 }
 
