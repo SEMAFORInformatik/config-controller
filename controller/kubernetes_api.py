@@ -64,7 +64,8 @@ class IntensJob(object):
         scheduling = True
         # Pending, Running
 
-        for event in w.stream(func=self.v1.list_pod_for_all_namespaces,
+        for event in w.stream(func=self.v1.list_namespaced_pod,
+                              namespace=Config.NAMESPACE,
                               label_selector='job-name=' + self.job_name,
                               timeout_seconds=10):
             statuses = event['object'].status.container_statuses
