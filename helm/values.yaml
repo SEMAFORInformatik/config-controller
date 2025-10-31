@@ -11,10 +11,10 @@ affinity: {}
 nameOverride: ""
 fullnameOverride: ""
 
-imageCredentials:
-  registry: ghcr.io
-  username:
-  password:
+# imageCredentials:
+#   registry: ghcr.io
+#   username:
+#   password:
 
 otel:
   enabled: false

@@ -59,6 +59,8 @@ spec:
             limits:
               memory: "100Mi"
 
+      {{- if .Values.imageCredentials }}
       imagePullSecrets:
-        - name: config-controller-registry
+        - name: {{ include "config-controller.fullname" . }}-registry
+      {{ end }}
 
