@@ -228,6 +228,9 @@ class KubernetesApi(object):
                     podlist.append(dict(
                         ip=pod.status.pod_ip,
                         name=pod.metadata.labels[name_label],
+                        sessionID=pod.metadata.labels[name_label], # legacy support
+                        hostname=pod.metadata.labels[name_label], # legacy support
+                        addr=pod.status.pod_ip, # legacy support
                         start=pod.status.start_time.timestamp()) | meta_labels)
                     break
         return podlist

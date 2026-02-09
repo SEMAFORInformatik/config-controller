@@ -1,3 +1,4 @@
+import json
 import flask
 import logging
 from controller import kube
@@ -14,6 +15,10 @@ def templates():
 
 @bp.route('/app/<type>')
 def getAll(type):
+    return flask.jsonify(kube.get_jobs(type))
+
+@bp.route('/api/<type>')
+def getAll_(type):
     return flask.jsonify(kube.get_jobs(type))
 
 
@@ -55,3 +60,28 @@ def delete(type, name):
         return flask.jsonify(dict(status='Success')), 200
 
     return flask.jsonify(dict(status='No job found')), 404
+
+
+@bp.route('/create/<name>')
+def create_old(name):
+    sessionID = flask.request.args.get("sessionID")
+    while True:
+        reply = get(name, sessionID)
+        if reply.status != 202:
+            break
+
+    response = json.loads(reply.response[0])
+    return flask.jsonify(dict(hostname=response['ip'],
+                              addr=response['ip']))
+
+
+@bp.route('/release/<name>')
+def release(name):
+
+    for template in kube.list_templates():
+        for job in kube.get_jobs(template):
+            if job['name'] == name or job['sessionID'] == name:
+                delete(template, job['name'])
+                return flask.jsonify(dict(status='Success')), 200
+
+    return flask.jsonify(dict(status='Not found')), 404

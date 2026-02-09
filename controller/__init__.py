@@ -1,3 +1,4 @@
+from controller.kubernetes_api import KubernetesApi
 import platform
 import logging
 import os
@@ -8,7 +9,7 @@ import config
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(message)s')
 
-kube = None
+kube: KubernetesApi = None
 
 
 def create_app(test_config=None):
