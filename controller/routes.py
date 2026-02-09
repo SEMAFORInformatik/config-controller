@@ -65,14 +65,29 @@ def delete(type, name):
 @bp.route('/create/<name>')
 def create_old(name):
     sessionID = flask.request.args.get("sessionID")
+    def get_app():
+        try:
+            job = kube.get_job(
+                name, sessionID, template_variables=flask.request.args.to_dict(True))
+            success, instance = job.get_pod_ip()
+            if not success:
+                return instance, 202
+
+            meta_labels = job.get_meta_labels()
+            logger.info('{"hostname": "%s"}', instance)
+            return instance, 200
+        except Exception as e:
+            logger.warn(e)
+            return str(e), 404
+
     while True:
-        reply = get(name, sessionID)
-        if reply.status != 202:
+        reply = get_app()
+        if reply[1] != 202:
             break
 
-    response = json.loads(reply.response[0])
-    return flask.jsonify(dict(hostname=response['ip'],
-                              addr=response['ip']))
+    ip = reply[0]
+    return flask.jsonify(dict(hostname=ip,
+                              addr=ip))
 
 
 @bp.route('/release/<name>')
