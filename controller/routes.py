@@ -1,4 +1,4 @@
-import json
+import time
 import flask
 import logging
 from controller import kube
@@ -35,7 +35,7 @@ def get(type, name):
         logger.info('{"hostname": "%s"}', instance)
         return flask.jsonify(dict(ip=instance) | meta_labels)
     except Exception as e:
-        logger.warn(e)
+        logger.warning(e)
         return flask.jsonify(dict(status='error', msg=str(e))), 404
 
 
@@ -49,7 +49,7 @@ def patch(type, name):
         job.add_labels(data)
         return flask.jsonify(dict(status='Success')), 200
     except Exception as e:
-        logger.warn(e)
+        logger.warning(e)
         return flask.jsonify(dict(status='error', msg=str(e))), 404
 
 
@@ -64,6 +64,7 @@ def delete(type, name):
 
 @bp.route('/create/<name>')
 def create_old(name):
+    start_time = time.time()
     sessionID = flask.request.args.get("sessionID")
     def get_app():
         try:
@@ -73,14 +74,18 @@ def create_old(name):
             if not success:
                 return instance, 202
 
-            meta_labels = job.get_meta_labels()
             logger.info('{"hostname": "%s"}', instance)
             return instance, 200
         except Exception as e:
-            logger.warn(e)
+            logger.warning(e)
             return str(e), 404
 
     while True:
+        # if it takes too long, delete the pod it tried to provision and return
+        if time.time() - start_time > 600:
+            delete(name, sessionID)
+            return flask.jsonify(dict(status='Could not provision app')), 408
+
         reply = get_app()
         if reply[1] != 202:
             break
