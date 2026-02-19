@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 meta_label_prefix = 'config-controller.semafor.ch/meta-'
 name_label = 'config-controller.semafor.ch/instance-name'
 type_label = 'config-controller.semafor.ch/instance-type'
-name_prefix = 'cc-app'
 
 
 def load_config():
@@ -36,7 +35,7 @@ class IntensJob(object):
         self.app_type = app_type
         self.name = name
         self.template_variables = template_variables
-        self.job_name = name_prefix + '-' + app_type + '-' + name
+        self.job_name = app_type + '-' + name
         self.v1 = client.CoreV1Api()
         self.batch_v1 = client.BatchV1Api()
         pods = self.v1.list_namespaced_pod(Config.NAMESPACE,
