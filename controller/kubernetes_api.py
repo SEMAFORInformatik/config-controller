@@ -78,6 +78,13 @@ class IntensJob(object):
                 w.stop()
                 return True, event['object'].status.pod_ip
 
+            if not ready:
+                try:
+                    if any(s.state.terminated.reason == 'Error' for s in statuses):
+                        return False, "app_error"
+                except:
+                    pass
+
         if scheduling:
             return False, "node_not_ready"
 
