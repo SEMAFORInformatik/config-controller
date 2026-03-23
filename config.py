@@ -20,6 +20,7 @@ def vcs_info():
 
 class Config(object):
     VCS_INFO = vcs_info()
+    BASE_DIR = os.environ.get('BASE_DIR')
     NAMESPACE = os.environ.get('JOB_NAMESPACE', 'default')
     CONFIG_MAP_SELECTOR = os.environ.get(
         'CONFIGMAP_SELECTOR', 'config-controller.semafor.ch/template')

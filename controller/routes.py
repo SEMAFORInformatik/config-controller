@@ -1,8 +1,14 @@
+import os
 import time
 import flask
 import logging
-from controller import kube
 
+from controller import kube, dock
+
+if os.getenv('KUBERNETES_SERVICE_HOST'):
+    api = kube
+else:
+    api = dock
 
 logger = logging.getLogger(__name__)
 bp = flask.Blueprint('routes', __name__)
@@ -10,24 +16,26 @@ bp = flask.Blueprint('routes', __name__)
 
 @bp.route('/app')
 def templates():
-    return flask.jsonify(kube.list_templates())
+    return flask.jsonify(api.list_templates())
 
 
 @bp.route('/app/<type>')
 def getAll(type):
-    return flask.jsonify(kube.get_jobs(type))
+    return flask.jsonify(api.get_jobs(type))
+
 
 @bp.route('/api/<type>')
 def getAll_(type):
-    return flask.jsonify(kube.get_jobs(type))
+    return flask.jsonify(api.get_jobs(type))
 
 
 @bp.route('/app/<type>/<name>')
 def get(type, name):
     try:
-        job = kube.get_job(
-            type, name, template_variables=flask.request.args.to_dict(True))
-        success, instance = job.get_pod_ip()
+        job = api.get_job(
+            type, name, template_variables=flask.request.args.to_dict(True)
+        )
+        success, instance = job.get_ip()
         if not success:
             return flask.jsonify(status=instance), 202
 
@@ -42,7 +50,7 @@ def get(type, name):
 @bp.route('/app/<type>/<name>', methods=['PATCH'])
 def patch(type, name):
     try:
-        job = kube.get_job(type, name, create=False)
+        job = api.get_job(type, name, create=False)
         if not job.exists:
             raise Exception('Job does ' + type + '/' + name + ' not exist')
         data = flask.request.get_json()
@@ -55,7 +63,7 @@ def patch(type, name):
 
 @bp.route('/app/<type>/<name>', methods=['DELETE'])
 def delete(type, name):
-    resp = kube.delete_job(type, name)
+    resp = api.delete_job(type, name)
     if resp:
         return flask.jsonify(dict(status='Success')), 200
 
@@ -65,12 +73,14 @@ def delete(type, name):
 @bp.route('/create/<name>')
 def create_old(name):
     start_time = time.time()
-    sessionID = flask.request.args.get("sessionID")
+    sessionID = flask.request.args.get('sessionID')
+
     def get_app():
         try:
-            job = kube.get_job(
-                name, sessionID, template_variables=flask.request.args.to_dict(True))
-            success, instance = job.get_pod_ip()
+            job = api.get_job(
+                name, sessionID, template_variables=flask.request.args.to_dict(True)
+            )
+            success, instance = job.get_ip()
             if not success:
                 return instance, 202
 
@@ -91,15 +101,13 @@ def create_old(name):
             break
 
     ip = reply[0]
-    return flask.jsonify(dict(hostname=ip,
-                              addr=ip))
+    return flask.jsonify(dict(hostname=ip, addr=ip))
 
 
 @bp.route('/release/<name>')
 def release(name):
-
-    for template in kube.list_templates():
-        for job in kube.get_jobs(template):
+    for template in api.list_templates():
+        for job in api.get_jobs(template):
             if job['name'] == name or job['sessionID'] == name:
                 delete(template, job['name'])
                 return flask.jsonify(dict(status='Success')), 200

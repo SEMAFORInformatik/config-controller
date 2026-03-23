@@ -1,9 +1,8 @@
-FROM alpine:3.17.3
+FROM python:3.14.3-alpine
 
 ARG REVISION
 
 RUN adduser --disabled-password --gecos '' app
-RUN apk --no-cache add python3 py-pip
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV

@@ -45,9 +45,9 @@ class IntensJob(object):
         self.exists = not len(pods) == 0
 
         if not self.exists and create:
-            self.create_job()
+            self._create_job()
 
-    def get_pod_ip(self):
+    def get_ip(self):
         """get the ip address of the pod
 
         Wait until the pod us running and then return the ip address of it.
@@ -106,7 +106,7 @@ class IntensJob(object):
 
         return pod_labels
 
-    def create_job_object(self):
+    def _create_job_object(self):
         """create the job object from in-cluster configmaps
 
         Creates the object to upload to the kubernetes cluster.
@@ -154,7 +154,7 @@ class IntensJob(object):
         )
         return job
 
-    def create_job(self):
+    def _create_job(self):
         """create the kubernetes job
 
         Creates the job in kubernetes.
@@ -162,7 +162,7 @@ class IntensJob(object):
         """
         try:
             self.batch_v1.create_namespaced_job(
-                body=self.create_job_object(),
+                body=self._create_job_object(),
                 namespace=Config.NAMESPACE)
             self.exists = True
         except Exception as e:
@@ -188,7 +188,7 @@ class IntensJob(object):
         self.v1.patch_namespaced_pod(
             pod_def.metadata.name, Config.NAMESPACE, pod_def)
 
-    def delete_job(self):
+    def _delete_job(self):
         """delete the kubernetes job
 
         Deletes the job in kubernetes.
@@ -293,7 +293,7 @@ class KubernetesApi(object):
         """
         job = IntensJob(type, name, create=False)
         if job.exists:
-            job.delete_job()
+            job._delete_job()
             return True
 
         return False
