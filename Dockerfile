@@ -2,8 +2,6 @@ FROM python:3.14.3-alpine
 
 ARG REVISION
 
-RUN adduser --disabled-password --gecos '' app
-
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
@@ -17,7 +15,6 @@ RUN pip3 install --no-cache-dir  -r requirements.txt && opentelemetry-bootstrap 
 COPY . .
 ENV FLASK_APP="controller"
 ENV SERVICE_PORT=3333
-USER app
 
 EXPOSE ${SERVICE_PORT}
 #
