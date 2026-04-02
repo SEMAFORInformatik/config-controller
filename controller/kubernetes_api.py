@@ -224,21 +224,34 @@ class KubernetesApi(object):
         pods = self.v1.list_namespaced_pod(namespace=Config.NAMESPACE,
                                            label_selector=type_label+'='+type)
         for pod in pods.items:
+            running = False
+            errored = False
             if pod.status.conditions is None:
                 return podlist
             for condition in pod.status.conditions:
                 if condition.type == 'Ready' and condition.status == 'True':
-                    meta_labels = dict([[k.removeprefix(meta_label_prefix), v]
-                                        for k, v in pod.metadata.labels.items()
-                                       if k.startswith(meta_label_prefix)])
-                    podlist.append(dict(
-                        ip=pod.status.pod_ip,
-                        name=pod.metadata.labels[name_label],
-                        sessionID=pod.metadata.labels[name_label], # legacy support
-                        hostname=pod.metadata.labels[name_label], # legacy support
-                        addr=pod.status.pod_ip, # legacy support
-                        start=pod.status.start_time.timestamp()) | meta_labels)
+                    running = True
                     break
+
+            for status in pod.status.container_statuses:
+                if not status.state.terminated:
+                    continue
+
+                if status.state.terminated.exit_code != 0:
+                    errored = True
+
+            if running or errored:
+                meta_labels = dict([[k.removeprefix(meta_label_prefix), v]
+                                    for k, v in pod.metadata.labels.items()
+                                   if k.startswith(meta_label_prefix)])
+                podlist.append(dict(
+                    ip=pod.status.pod_ip,
+                    name=pod.metadata.labels[name_label],
+                    sessionID=pod.metadata.labels[name_label], # legacy support
+                    hostname=pod.metadata.labels[name_label], # legacy support
+                    addr=pod.status.pod_ip, # legacy support
+                    errored=errored,
+                    start=pod.status.start_time.timestamp()) | meta_labels)
         return podlist
 
     def list_templates(self):
