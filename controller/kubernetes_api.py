@@ -1,6 +1,7 @@
 """
- lists, creates and deletes pods with kubernetes API
+lists, creates and deletes pods with kubernetes API
 """
+
 import logging
 import os
 import yaml
@@ -17,6 +18,7 @@ type_label = 'config-controller.semafor.ch/instance-type'
 
 def load_config():
     from kubernetes import config
+
     if os.getenv('KUBERNETES_SERVICE_HOST'):
         config.load_incluster_config()
     else:
@@ -38,9 +40,9 @@ class IntensJob(object):
         self.job_name = app_type + '-' + name
         self.v1 = client.CoreV1Api()
         self.batch_v1 = client.BatchV1Api()
-        pods = self.v1.list_namespaced_pod(Config.NAMESPACE,
-                                           label_selector='job-name='
-                                           + self.job_name).items
+        pods = self.v1.list_namespaced_pod(
+            Config.NAMESPACE, label_selector='job-name=' + self.job_name
+        ).items
 
         self.exists = not len(pods) == 0
 
@@ -63,10 +65,12 @@ class IntensJob(object):
         scheduling = True
         # Pending, Running
 
-        for event in w.stream(func=self.v1.list_namespaced_pod,
-                              namespace=Config.NAMESPACE,
-                              label_selector='job-name=' + self.job_name,
-                              timeout_seconds=10):
+        for event in w.stream(
+            func=self.v1.list_namespaced_pod,
+            namespace=Config.NAMESPACE,
+            label_selector='job-name=' + self.job_name,
+            timeout_seconds=10,
+        ):
             statuses = event['object'].status.container_statuses
             if statuses is None:
                 continue
@@ -81,14 +85,14 @@ class IntensJob(object):
             if not ready:
                 try:
                     if any(s.state.terminated.reason == 'Error' for s in statuses):
-                        return False, "app_error"
+                        return False, 'app_error'
                 except:
                     pass
 
         if scheduling:
-            return False, "node_not_ready"
+            return False, 'node_not_ready'
 
-        return False, "pulling_image"
+        return False, 'pulling_image'
 
     def get_meta_labels(self):
         """get custom set metadata
@@ -99,10 +103,16 @@ class IntensJob(object):
                 The metadata
         """
         pod_def = self.v1.list_namespaced_pod(
-            Config.NAMESPACE, label_selector='job-name=' + self.job_name,).items[0]
-        pod_labels = dict([[k.removeprefix(meta_label_prefix), v]
-                          for k, v in pod_def.metadata.labels.items()
-                           if k.startswith(meta_label_prefix)])
+            Config.NAMESPACE,
+            label_selector='job-name=' + self.job_name,
+        ).items[0]
+        pod_labels = dict(
+            [
+                [k.removeprefix(meta_label_prefix), v]
+                for k, v in pod_def.metadata.labels.items()
+                if k.startswith(meta_label_prefix)
+            ]
+        )
 
         return pod_labels
 
@@ -116,8 +126,9 @@ class IntensJob(object):
                 Job object based on the configmap template
         """
         # Get all configmaps that are marked as a config-controller app
-        config_maps = self.v1.list_namespaced_config_map(Config.NAMESPACE,
-                                                         label_selector=Config.CONFIG_MAP_SELECTOR).items
+        config_maps = self.v1.list_namespaced_config_map(
+            Config.NAMESPACE, label_selector=Config.CONFIG_MAP_SELECTOR
+        ).items
 
         file_name = self.app_type + '.yaml'
         yaml_data = None
@@ -132,7 +143,8 @@ class IntensJob(object):
 
         try:
             rendered_yaml = Template(yaml_data).render(
-                alternatives=self.template_variables)
+                alternatives=self.template_variables
+            )
         except Exception as e:
             logger.error(e)
             raise e
@@ -150,7 +162,7 @@ class IntensJob(object):
             api_version='batch/v1',
             kind='Job',
             metadata=client.V1ObjectMeta(name=self.job_name),
-            spec=client.V1JobSpec(template=kube_info)
+            spec=client.V1JobSpec(template=kube_info),
         )
         return job
 
@@ -162,8 +174,8 @@ class IntensJob(object):
         """
         try:
             self.batch_v1.create_namespaced_job(
-                body=self._create_job_object(),
-                namespace=Config.NAMESPACE)
+                body=self._create_job_object(), namespace=Config.NAMESPACE
+            )
             self.exists = True
         except Exception as e:
             raise e
@@ -180,13 +192,13 @@ class IntensJob(object):
 
         """
         pod_def = self.v1.list_namespaced_pod(
-            Config.NAMESPACE, label_selector='job-name=' + self.job_name,).items[0]
+            Config.NAMESPACE,
+            label_selector='job-name=' + self.job_name,
+        ).items[0]
         for key, val in pod_labels.items():
-            pod_def.metadata.labels[meta_label_prefix +
-                                    key] = val
+            pod_def.metadata.labels[meta_label_prefix + key] = val
 
-        self.v1.patch_namespaced_pod(
-            pod_def.metadata.name, Config.NAMESPACE, pod_def)
+        self.v1.patch_namespaced_pod(pod_def.metadata.name, Config.NAMESPACE, pod_def)
 
     def _delete_job(self):
         """delete the kubernetes job
@@ -197,8 +209,9 @@ class IntensJob(object):
             name=self.job_name,
             namespace=Config.NAMESPACE,
             body=client.V1DeleteOptions(
-                propagation_policy='Foreground',
-                grace_period_seconds=0))
+                propagation_policy='Foreground', grace_period_seconds=0
+            ),
+        )
         logger.info('Job deleted. status="%s"' % str(api_response.status))
 
 
@@ -221,8 +234,9 @@ class KubernetesApi(object):
         """
 
         podlist = []
-        pods = self.v1.list_namespaced_pod(namespace=Config.NAMESPACE,
-                                           label_selector=type_label+'='+type)
+        pods = self.v1.list_namespaced_pod(
+            namespace=Config.NAMESPACE, label_selector=type_label + '=' + type
+        )
         for pod in pods.items:
             running = False
             errored = False
@@ -241,17 +255,25 @@ class KubernetesApi(object):
                     errored = True
 
             if running or errored:
-                meta_labels = dict([[k.removeprefix(meta_label_prefix), v]
-                                    for k, v in pod.metadata.labels.items()
-                                   if k.startswith(meta_label_prefix)])
-                podlist.append(dict(
-                    ip=pod.status.pod_ip,
-                    name=pod.metadata.labels[name_label],
-                    sessionID=pod.metadata.labels[name_label], # legacy support
-                    hostname=pod.metadata.labels[name_label], # legacy support
-                    addr=pod.status.pod_ip, # legacy support
-                    errored=errored,
-                    start=pod.status.start_time.timestamp()) | meta_labels)
+                meta_labels = dict(
+                    [
+                        [k.removeprefix(meta_label_prefix), v]
+                        for k, v in pod.metadata.labels.items()
+                        if k.startswith(meta_label_prefix)
+                    ]
+                )
+                podlist.append(
+                    dict(
+                        ip=pod.status.pod_ip,
+                        name=pod.metadata.labels[name_label],
+                        sessionID=pod.metadata.labels[name_label],  # legacy support
+                        hostname=pod.metadata.labels[name_label],  # legacy support
+                        addr=pod.status.pod_ip,  # legacy support
+                        errored=errored,
+                        start=pod.status.start_time.timestamp(),
+                    )
+                    | meta_labels
+                )
         return podlist
 
     def list_templates(self):
@@ -263,8 +285,9 @@ class KubernetesApi(object):
         :return list
                 A list containing the names you can requrest applications with.
         """
-        config_maps = self.v1.list_namespaced_config_map(Config.NAMESPACE,
-                                                         label_selector=Config.CONFIG_MAP_SELECTOR).items
+        config_maps = self.v1.list_namespaced_config_map(
+            Config.NAMESPACE, label_selector=Config.CONFIG_MAP_SELECTOR
+        ).items
 
         templates = []
         for map in config_maps:
