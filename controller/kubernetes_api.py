@@ -84,7 +84,7 @@ class IntensJob(object):
 
             if not ready:
                 try:
-                    if any(s.state.terminated.reason == 'Error' for s in statuses):
+                    if any(s.state.terminated and s.state.terminated.exit_code != 0 for s in statuses):
                         return False, 'app_error'
                 except:
                     pass
@@ -247,12 +247,13 @@ class KubernetesApi(object):
                     running = True
                     break
 
-            for status in pod.status.container_statuses:
-                if not status.state.terminated:
-                    continue
+            if pod.status.container_statuses:
+                for status in pod.status.container_statuses:
+                    if not status.state.terminated:
+                        continue
 
-                if status.state.terminated.exit_code != 0:
-                    errored = True
+                    if status.state.terminated.exit_code != 0:
+                        errored = True
 
             if running or errored:
                 meta_labels = dict(

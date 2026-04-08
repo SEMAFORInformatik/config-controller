@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-name = os.environ.get('FLASK_APP') or 'config-controller'
+name = 'config-controller'
 
 
 def vcs_info():

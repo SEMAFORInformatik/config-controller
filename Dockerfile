@@ -13,7 +13,6 @@ RUN pip3 install --no-cache-dir  -r requirements.txt && opentelemetry-bootstrap 
   [ -z "$REVISION" ] ||echo "$REVISION" > vcs.info
 
 COPY . .
-ENV FLASK_APP="controller"
 ENV SERVICE_PORT=3333
 
 EXPOSE ${SERVICE_PORT}

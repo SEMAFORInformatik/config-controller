@@ -1,74 +1,24 @@
-from controller.docker_api import DockerApi
-from controller.kubernetes_api import KubernetesApi
+from controller.routes import bp
 import platform
 import logging
-import os
-import flask
-import werkzeug
-import config
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
-
-kube: KubernetesApi = None
-dock: DockerApi = None
+from config import Config, name as appname
+from fastapi import FastAPI
 
 
-def create_app(test_config=None):
-    global kube, dock
+logger = logging.getLogger(__name__)
 
-    # create and configure the app
-    app = flask.Flask(__name__, instance_relative_config=True)
-    app.config.from_object(config.Config())
+# create and configure the app
+app = FastAPI()
 
-    if test_config is None:
-        try:
-            if os.getenv('KUBERNETES_SERVICE_HOST'):
-                import controller.kubernetes_api
 
-                controller.kubernetes_api.load_config()
-                kube = controller.kubernetes_api.KubernetesApi()
-            else:
-                import controller.docker_api
+logger.info("{'name': '%s',  'version': '%s'}", appname, Config.VCS_INFO)
 
-                controller.docker_api.load_config()
-                dock = controller.docker_api.DockerApi()
-        except:
-            app.logger.error('Kubernetes Client', exc_info=True)
-            exit(1)
 
-    else:
-        # load the test config if passed in
-        app.config.from_mapping(test_config)
-        kube = test_config['KUBE']
-        dock = test_config['DOCK']
+@app.get('/info')
+def get_info():
+    """return info"""
+    info = dict(status='UP', hostname=platform.node(), rev=Config.VCS_INFO)
+    return info
 
-    app.logger.info(
-        "{'name': '%s',  'version': '%s'}", config.name, app.config['VCS_INFO']
-    )
 
-    @app.errorhandler(werkzeug.exceptions.BadRequest)
-    def badrequest(error):
-        return (
-            flask.jsonify(dict(status='error', msg='bad request')),
-            werkzeug.exceptions.BadRequest,
-        )
-
-    @app.errorhandler(404)
-    def not_found_error(error):
-        return flask.jsonify(dict(status='error', msg='not found')), 404
-
-    @app.errorhandler(500)
-    def internal_error(error):
-        return flask.jsonify(dict(status='error', msg='internal error')), 500
-
-    @app.route('/info', methods=['GET'])
-    def get_info():
-        """return info"""
-        info = dict(status='UP', hostname=platform.node(), rev=app.config['VCS_INFO'])
-        return flask.jsonify(info)
-
-    from controller.routes import bp
-
-    app.register_blueprint(bp)
-
-    return app
+app.include_router(bp)

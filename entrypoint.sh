@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 if [ -z ${OTEL_SERVICE_NAME} ]; then
-  flask run --port=${SERVICE_PORT} --host=0.0.0.0
+  uvicorn controller:app --port ${SERVICE_PORT} --host 0.0.0.0 --log-config log_conf.yaml
 else
-  opentelemetry-instrument flask run --port=${SERVICE_PORT} --host=0.0.0.0
+  opentelemetry-instrument fastapi run --port ${SERVICE_PORT} controller --log-config log_conf.yaml
 fi

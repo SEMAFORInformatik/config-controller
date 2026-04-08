@@ -1,85 +1,85 @@
 import os
 import time
-import flask
+from fastapi import APIRouter, Response, HTTPException, Request
 import logging
 
-from controller import kube, dock
-
 if os.getenv('KUBERNETES_SERVICE_HOST'):
-    api = kube
+    import controller.kubernetes_api
+
+    controller.kubernetes_api.load_config()
+    api = controller.kubernetes_api.KubernetesApi()
 else:
-    api = dock
+    import controller.docker_api
+
+    controller.docker_api.load_config()
+    api = controller.docker_api.DockerApi()
 
 logger = logging.getLogger(__name__)
-bp = flask.Blueprint('routes', __name__)
+bp = APIRouter()
 
 
-@bp.route('/app')
+@bp.get('/app')
 def templates():
-    return flask.jsonify(api.list_templates())
+    return api.list_templates()
 
 
-@bp.route('/app/<type>')
-def getAll(type):
-    return flask.jsonify(api.get_jobs(type))
+@bp.get('/app/{type}')
+def getAll(type: str):
+    return api.get_jobs(type)
 
 
-@bp.route('/api/<type>')
-def getAll_(type):
-    return flask.jsonify(api.get_jobs(type))
+@bp.get('/api/{type}')
+def getAll_(type: str):
+    return api.get_jobs(type)
 
 
-@bp.route('/app/<type>/<name>')
-def get(type, name):
+@bp.get('/app/{type}/{name}')
+def get(type, name, req: Request, response: Response):
     try:
-        job = api.get_job(
-            type, name, template_variables=flask.request.args.to_dict(True)
-        )
+        job = api.get_job(type, name, template_variables=dict(req.query_params))
         success, instance = job.get_ip()
         if not success:
-            return flask.jsonify(status=instance), 202
+            response.status_code = 202
+            return {'status': instance}
 
         meta_labels = job.get_meta_labels()
         logger.info('{"hostname": "%s"}', instance)
-        return flask.jsonify(dict(ip=instance) | meta_labels)
+        return dict(ip=instance) | meta_labels
     except Exception as e:
         logger.warning(e)
-        return flask.jsonify(dict(status='error', msg=str(e))), 404
+        response.status_code = 404
+        return dict(status='error', msg=str(e))
 
 
-@bp.route('/app/<type>/<name>', methods=['PATCH'])
-def patch(type, name):
+@bp.patch('/app/{type}/{name}')
+def patch(type, name, data: dict):
     try:
         job = api.get_job(type, name, create=False)
         if not job.exists:
             raise Exception('Job does ' + type + '/' + name + ' not exist')
-        data = flask.request.get_json()
         job.add_labels(data)
-        return flask.jsonify(dict(status='Success')), 200
+        return dict(status='Success')
     except Exception as e:
         logger.warning(e)
-        return flask.jsonify(dict(status='error', msg=str(e))), 404
+        raise HTTPException(status_code=404, detail=dict(status='error', msg=str(e)))
 
 
-@bp.route('/app/<type>/<name>', methods=['DELETE'])
+@bp.delete('/app/{type}/{name}')
 def delete(type, name):
     resp = api.delete_job(type, name)
     if resp:
-        return flask.jsonify(dict(status='Success')), 200
+        return dict(status='Success')
 
-    return flask.jsonify(dict(status='No job found')), 404
+    raise HTTPException(status_code=404, detail=dict(status='No job found'))
 
 
-@bp.route('/create/<name>')
-def create_old(name):
+@bp.get('/create/{name}')
+def create_old(name, sessionID: str, req: Request, response: Response):
     start_time = time.time()
-    sessionID = flask.request.args.get('sessionID')
 
     def get_app():
         try:
-            job = api.get_job(
-                name, sessionID, template_variables=flask.request.args.to_dict(True)
-            )
+            job = api.get_job(type, name, template_variables=dict(req.query_params))
             success, instance = job.get_ip()
             if not success:
                 return instance, 202
@@ -94,22 +94,23 @@ def create_old(name):
         # if it takes too long, delete the pod it tried to provision and return
         if time.time() - start_time > 600:
             delete(name, sessionID)
-            return flask.jsonify(dict(status='Could not provision app')), 408
+            response.status_code = 408
+            return dict(status='Could not provision app')
 
         reply = get_app()
         if reply[1] != 202:
             break
 
     ip = reply[0]
-    return flask.jsonify(dict(hostname=ip, addr=ip))
+    return dict(hostname=ip, addr=ip)
 
 
-@bp.route('/release/<name>')
+@bp.route('/release/{name}')
 def release(name):
     for template in api.list_templates():
         for job in api.get_jobs(template):
             if job['name'] == name or job['sessionID'] == name:
                 delete(template, job['name'])
-                return flask.jsonify(dict(status='Success')), 200
+                return dict(status='Success')
 
-    return flask.jsonify(dict(status='Not found')), 404
+    raise HTTPException(status_code=404, detail=dict(status='Not found'))
