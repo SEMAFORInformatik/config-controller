@@ -1,9 +1,6 @@
 name: Scan
 on:
   push:
-    branches:
-      - main
-      - v1-docker
 jobs:
   sonarqube:
     name: SonarQube
