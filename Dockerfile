@@ -1,20 +1,36 @@
-FROM python:3.14.3-alpine
+FROM ghcr.io/astral-sh/uv:python3.13-alpine AS builder
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-ARG REVISION
+# Omit development dependencies
+ENV UV_NO_DEV=1
 
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# Disable Python downloads, because we want to use the system interpreter
+# across both images. If using a managed Python version, it needs to be
+# copied from the build image into the final image; see `standalone.Dockerfile`
+# for an example.
+ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
-COPY requirements.txt .
-# install the library dependencies for this application
-RUN pip3 install --no-cache-dir  -r requirements.txt && opentelemetry-bootstrap -a install && \
-  [ -z "$REVISION" ] ||echo "$REVISION" > vcs.info
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
-COPY . .
+
+# Then, use a final image without uv
+FROM python:3.13-alpine
+
+COPY --from=builder /app /app
+
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
+
 ENV SERVICE_PORT=3333
 
-EXPOSE ${SERVICE_PORT}
-#
-CMD [ "/app/entrypoint.sh" ]
+WORKDIR /app
+
+# Run the FastAPI application by default
+CMD ["./entrypoint.sh"]

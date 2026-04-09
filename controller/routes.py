@@ -44,11 +44,11 @@ def get(type, name, req: Request, response: Response):
 
         meta_labels = job.get_meta_labels()
         logger.info('{"hostname": "%s"}', instance)
-        return dict(ip=instance) | meta_labels
+        return {'ip': instance} | meta_labels
     except Exception as e:
         logger.warning(e)
         response.status_code = 404
-        return dict(status='error', msg=str(e))
+        return {'status': 'error', 'msg': str(e)}
 
 
 @bp.patch('/app/{type}/{name}')
@@ -58,19 +58,19 @@ def patch(type, name, data: dict):
         if not job.exists:
             raise Exception('Job does ' + type + '/' + name + ' not exist')
         job.add_labels(data)
-        return dict(status='Success')
+        return {'status': 'Success'}
     except Exception as e:
         logger.warning(e)
-        raise HTTPException(status_code=404, detail=dict(status='error', msg=str(e)))
+        raise HTTPException(status_code=404, detail={'status': 'error', 'msg': str(e)})
 
 
 @bp.delete('/app/{type}/{name}')
 def delete(type, name):
     resp = api.delete_job(type, name)
     if resp:
-        return dict(status='Success')
+        return {'status': 'Success'}
 
-    raise HTTPException(status_code=404, detail=dict(status='No job found'))
+    raise HTTPException(status_code=404, detail={'status': 'No job found'})
 
 
 @bp.get('/create/{name}')
@@ -95,14 +95,14 @@ def create_old(name, sessionID: str, req: Request, response: Response):
         if time.time() - start_time > 600:
             delete(name, sessionID)
             response.status_code = 408
-            return dict(status='Could not provision app')
+            return {'status': 'Could not provision app'}
 
         reply = get_app()
         if reply[1] != 202:
             break
 
     ip = reply[0]
-    return dict(hostname=ip, addr=ip)
+    return {'hostname': ip, 'addr': ip}
 
 
 @bp.route('/release/{name}')
@@ -111,6 +111,6 @@ def release(name):
         for job in api.get_jobs(template):
             if job['name'] == name or job['sessionID'] == name:
                 delete(template, job['name'])
-                return dict(status='Success')
+                return {'status': 'Success'}
 
-    raise HTTPException(status_code=404, detail=dict(status='Not found'))
+    raise HTTPException(status_code=404, detail={'status': 'Not found'})

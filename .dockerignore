@@ -4,8 +4,12 @@ instance
 tests
 helm
 venv
+.venv
+sonar-project.properties
 Dockerfile
 create-image.sh
 test_requirements.txt
+LICENSE
+README.md
 skaffold.yaml
 k8s

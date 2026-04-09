@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: config-controller
@@ -7,6 +7,8 @@ build:
   - image: ghcr.io/semaforinformatik/config-controller
     docker:
       dockerfile: Dockerfile
+  local:
+    useBuildkit: true
 deploy:
   helm:
     releases:
