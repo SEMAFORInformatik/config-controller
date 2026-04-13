@@ -1,9 +1,11 @@
-from controller.routes import bp
-import platform
 import logging
-from config import Config, name as appname
+import platform
+
 from fastapi import FastAPI
 
+from config import Config
+from config import name as appname
+from controller.routes import bp
 
 logger = logging.getLogger(__name__)
 

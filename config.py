@@ -18,7 +18,7 @@ def vcs_info():
     return name.strip()
 
 
-class Config(object):
+class Config:
     VCS_INFO = vcs_info()
     BASE_DIR = os.environ.get('BASE_DIR')
     NAMESPACE = os.environ.get('JOB_NAMESPACE', 'default')

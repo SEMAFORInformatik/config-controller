@@ -4,10 +4,12 @@ lists, creates and deletes pods with kubernetes API
 
 import logging
 import os
+
 import yaml
-from mako.template import Template
-from config import Config
 from kubernetes import client, watch
+from mako.template import Template
+
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +27,8 @@ def load_config():
         config.load_kube_config()
 
 
-class IntensJob(object):
-    def __init__(self, app_type, name, create=True, template_variables=dict()):
+class IntensJob:
+    def __init__(self, app_type, name, create=True, template_variables=None):
         """construct a job instance
 
         :param app_type: Type of the app to make a job for.
@@ -34,6 +36,8 @@ class IntensJob(object):
         :param create: Whether or not to create the
                         job object in kubernetes if it's missing.
         """
+        if template_variables is None:
+            template_variables = {}
         self.app_type = app_type
         self.name = name
         self.template_variables = template_variables
@@ -84,7 +88,10 @@ class IntensJob(object):
 
             if not ready:
                 try:
-                    if any(s.state.terminated and s.state.terminated.exit_code != 0 for s in statuses):
+                    if any(
+                        s.state.terminated and s.state.terminated.exit_code != 0
+                        for s in statuses
+                    ):
                         return False, 'app_error'
                 except:
                     pass
@@ -212,10 +219,10 @@ class IntensJob(object):
                 propagation_policy='Foreground', grace_period_seconds=0
             ),
         )
-        logger.info('Job deleted. status="%s"' % str(api_response.status))
+        logger.info(f'Job deleted. status="{str(api_response.status)}"')
 
 
-class KubernetesApi(object):
+class KubernetesApi:
     def __init__(self):
         self.v1 = client.CoreV1Api()
         self.batch_v1 = client.BatchV1Api()
@@ -264,15 +271,15 @@ class KubernetesApi(object):
                     ]
                 )
                 podlist.append(
-                    dict(
-                        ip=pod.status.pod_ip,
-                        name=pod.metadata.labels[name_label],
-                        sessionID=pod.metadata.labels[name_label],  # legacy support
-                        hostname=pod.metadata.labels[name_label],  # legacy support
-                        addr=pod.status.pod_ip,  # legacy support
-                        errored=errored,
-                        start=pod.status.start_time.timestamp(),
-                    )
+                    {
+                        'ip': pod.status.pod_ip,
+                        'name': pod.metadata.labels[name_label],
+                        'sessionID': pod.metadata.labels[name_label],  # legacy support
+                        'hostname': pod.metadata.labels[name_label],  # legacy support
+                        'addr': pod.status.pod_ip,  # legacy support
+                        'errored': errored,
+                        'start': pod.status.start_time.timestamp(),
+                    }
                     | meta_labels
                 )
         return podlist
@@ -296,7 +303,7 @@ class KubernetesApi(object):
                 templates.append(template.removesuffix('.yaml'))
         return templates
 
-    def get_job(self, type, name, create=True, template_variables=dict()):
+    def get_job(self, type, name, create=True, template_variables=None):
         """create a job of an app giving it a name
 
         Starts a kubernetes job using the template from the application type
@@ -314,6 +321,8 @@ class KubernetesApi(object):
         :return str
                 ip address of the pod.
         """
+        if template_variables is None:
+            template_variables = {}
         job = IntensJob(type, name, create, template_variables)
         return job
 

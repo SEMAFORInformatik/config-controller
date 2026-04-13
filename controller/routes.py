@@ -1,7 +1,8 @@
+import logging
 import os
 import time
-from fastapi import APIRouter, Response, HTTPException, Request
-import logging
+
+from fastapi import APIRouter, HTTPException, Request, Response
 
 if os.getenv('KUBERNETES_SERVICE_HOST'):
     import controller.kubernetes_api

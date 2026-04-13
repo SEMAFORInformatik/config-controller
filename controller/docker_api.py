@@ -2,15 +2,15 @@
 lists, creates and deletes pods with docker API
 """
 
-import socket
-
+import configparser
 import datetime
-
+import glob
 import logging
 import os
-import glob
+import socket
+
 import docker
-import configparser
+
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def load_config():
     client = docker.DockerClient()
     cc_container = client.containers.get(socket.gethostname())
     work_dir = cc_container.labels['com.docker.compose.project.working_dir']
-    networks = [k for k in cc_container.attrs['NetworkSettings']['Networks']]
+    networks = list(cc_container.attrs['NetworkSettings']['Networks'])
     logger.info('Networks: %s', networks)
     if len(networks) > 0:
         docker_network = networks[0]
@@ -38,8 +38,10 @@ def load_config():
         logger.warning('WARNING: Use default network: %s', docker_network)
 
 
-class IntensJob(object):
-    def __init__(self, app_type, name, create=True, template_variables=dict()):
+class IntensJob:
+    def __init__(self, app_type, name, create=True, template_variables=None):
+        if template_variables is None:
+            template_variables = {}
         properties_file = os.path.join(TEMPLATE_FOLDER, app_type + '.properties')
         config_parser = configparser.RawConfigParser(allow_unnamed_section=True)
         config_parser.read(properties_file)
@@ -67,7 +69,7 @@ class IntensJob(object):
                 continue
             if key.startswith('volume.'):
                 self.volumes.append(
-                    '{0}/{1}:{2}'.format(
+                    '{}/{}:{}'.format(
                         Config.BASE_DIR if Config.BASE_DIR else work_dir,
                         key.removeprefix('volume.'),
                         val,
@@ -116,14 +118,14 @@ class IntensJob(object):
         return False
 
 
-class DockerApi(object):
+class DockerApi:
     def __init__(self):
         pass
 
     def get_jobs(self, type):
         jobs = []
         for container in client.containers.list(
-            filters={'label': '{0}={1}'.format(type_label, type)}
+            filters={'label': f'{type_label}={type}'}
         ):
             logger.info(container.attrs)
             ip = container.attrs['NetworkSettings']['Networks'][docker_network][
@@ -150,7 +152,9 @@ class DockerApi(object):
 
         return [os.path.basename(f.removesuffix('.properties')) for f in template_files]
 
-    def get_job(self, type, name, create=True, template_variables=dict()):
+    def get_job(self, type, name, create=True, template_variables=None):
+        if template_variables is None:
+            template_variables = {}
         job = IntensJob(type, name, create, template_variables)
         return job
 
