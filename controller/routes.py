@@ -29,7 +29,7 @@ def getAll(type: str):
     return api.get_jobs(type)
 
 
-@bp.get('/api/{type}')
+@bp.get('/api/{type}', deprecated=True)
 def getAll_(type: str):
     return api.get_jobs(type)
 
@@ -74,7 +74,7 @@ def delete(type, name):
     raise HTTPException(status_code=404, detail={'status': 'No job found'})
 
 
-@bp.get('/create/{name}')
+@bp.get('/create/{name}', deprecated=True)
 def create_old(name, sessionID: str, req: Request, response: Response):
     start_time = time.time()
 
@@ -106,7 +106,7 @@ def create_old(name, sessionID: str, req: Request, response: Response):
     return {'hostname': ip, 'addr': ip}
 
 
-@bp.route('/release/{name}')
+@bp.get('/release/{name}', deprecated=True)
 def release(name):
     for template in api.list_templates():
         for job in api.get_jobs(template):

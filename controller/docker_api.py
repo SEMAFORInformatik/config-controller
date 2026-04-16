@@ -22,6 +22,7 @@ type_label = 'config-controller.semafor.ch/instance-type'
 client: docker.DockerClient
 docker_network: str
 work_dir: str
+meta_labels: dict[str, dict[str, str]] = {}
 
 
 def load_config():
@@ -46,6 +47,9 @@ class IntensJob:
         config_parser = configparser.RawConfigParser(allow_unnamed_section=True)
         config_parser.read(properties_file)
         self.container_name = app_type + '-' + name
+
+        if self.container_name not in meta_labels.keys():
+            meta_labels[self.container_name] = {}
 
         try:
             self.container = client.containers.get(self.container_name)
@@ -100,11 +104,11 @@ class IntensJob:
         pass
 
     def get_meta_labels(self):
-        return {}
-        pass
+        return meta_labels[self.container_name]
 
     def add_labels(self, pod_labels):
-        pass
+        for key, val in pod_labels.items():
+            meta_labels[self.container_name][key] = val
 
     @property
     def exists(self):
@@ -113,6 +117,7 @@ class IntensJob:
     def _delete(self):
         if self.exists:
             self.container.remove(force=True)
+            del meta_labels[self.container_name]
             return True
 
         return False
