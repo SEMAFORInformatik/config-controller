@@ -248,12 +248,14 @@ class KubernetesApi:
             running = False
             errored = False
             if pod.status.conditions is None:
-                return podlist
+                break
             for condition in pod.status.conditions:
                 if condition.type == 'Ready' and condition.status == 'True':
                     running = True
                     break
 
+            if pod.status.container_statuses is None:
+                break
             if pod.status.container_statuses:
                 for status in pod.status.container_statuses:
                     if not status.state.terminated:
