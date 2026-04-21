@@ -80,7 +80,7 @@ def create_old(name, sessionID: str, req: Request, response: Response):
 
     def get_app():
         try:
-            job = api.get_job(type, name, template_variables=dict(req.query_params))
+            job = api.get_job(name, sessionID, template_variables=dict(req.query_params))
             success, instance = job.get_ip()
             if not success:
                 return instance, 202
