@@ -93,7 +93,7 @@ def create_old(name, sessionID: str, req: Request, response: Response):
 
     while True:
         # if it takes too long, delete the pod it tried to provision and return
-        if time.time() - start_time > 600:
+        if time.time() - start_time > 300:
             delete(name, sessionID)
             response.status_code = 408
             return {'status': 'Could not provision app'}

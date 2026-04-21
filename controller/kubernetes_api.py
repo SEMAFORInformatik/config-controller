@@ -262,26 +262,25 @@ class KubernetesApi:
                     if status.state.terminated.exit_code != 0:
                         errored = True
 
-            if running or errored:
-                meta_labels = dict(
-                    [
-                        [k.removeprefix(meta_label_prefix), v]
-                        for k, v in pod.metadata.labels.items()
-                        if k.startswith(meta_label_prefix)
-                    ]
-                )
-                podlist.append(
-                    {
-                        'ip': pod.status.pod_ip,
-                        'name': pod.metadata.labels[name_label],
-                        'sessionID': pod.metadata.labels[name_label],  # legacy support
-                        'hostname': pod.metadata.labels[name_label],  # legacy support
-                        'addr': pod.status.pod_ip,  # legacy support
-                        'errored': errored,
-                        'start': pod.status.start_time.timestamp(),
-                    }
-                    | meta_labels
-                )
+            meta_labels = dict(
+                [
+                    [k.removeprefix(meta_label_prefix), v]
+                    for k, v in pod.metadata.labels.items()
+                    if k.startswith(meta_label_prefix)
+                ]
+            )
+            podlist.append(
+                {
+                    'ip': pod.status.pod_ip,
+                    'name': pod.metadata.labels[name_label],
+                    'sessionID': pod.metadata.labels[name_label],  # legacy support
+                    'hostname': pod.metadata.labels[name_label],  # legacy support
+                    'addr': pod.status.pod_ip,  # legacy support
+                    'errored': errored or not running,
+                    'start': pod.status.start_time.timestamp() if running else 0,
+                }
+                | meta_labels
+            )
         return podlist
 
     def list_templates(self):
